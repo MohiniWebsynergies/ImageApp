@@ -87,9 +87,9 @@ export default class App extends Component<{}> {
             </TouchableOpacity>
             <Icon
               containerStyle={styles.addIcon}
-              size={23}
-              name="camera-plus"
-              type="MaterialCommunityIcons"
+              size={30}
+              name="camera-outline"
+              type="ionicon"
               color="#517fa4"
             />
           </View>
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   iconsContainer: {
     width: '20%',
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
   },
   switchIcon: {
     color: 'black',
