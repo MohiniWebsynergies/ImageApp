@@ -10,59 +10,70 @@ import {
   Platform,
 } from 'react-native';
 import {Icon} from 'react-native-elements';
+import PropTypes from 'prop-types';
+import ImagePicker from 'react-native-image-picker';
+import RNFS from 'react-native-fs';
+import ImageResizer from 'react-native-image-resizer';
+import ImageComponent from './ImageComponent';
+import {ActionTypes} from '../reducers/constants';
+import {connect} from 'react-redux';
 
-class ImageComponent extends Component {
-  constructor() {
-    super();
-  }
-
-  render() {
-    return this.props.gridView ? (
-      <View style={styles.gridViewHolder}>
-        <Image
-          source={{uri: this.props.thumbnailUrl}}
-          style={styles.gridViewImage}
-        />
-        <View style={styles.textViewHolder}>
-          <Text numberOfLines={1} style={styles.textOnImage}>
-            {this.props.name}
-          </Text>
-        </View>
-      </View>
-    ) : (
-      <View style={styles.listViewHolder}>
-        <Image
-          source={{uri: this.props.thumbnailUrl}}
-          style={styles.listViewImage}
-        />
-        <View style={styles.listViewText}>
-          <Text>{this.props.name}</Text>
-        </View>
-      </View>
-    );
-  }
-}
-
-export default class App extends Component<{}> {
-  constructor() {
-    super();
+class RootScreen extends Component {
+  constructor(props) {
+    super(props);
+    console.log('props', props);
     this.state = {
       imagesData: null,
+      localImages: null,
       loading: true,
       gridView: true,
     };
   }
 
   componentDidMount() {
-    fetch('https://jsonplaceholder.typicode.com/photos')
-      .then((response) => response.json())
-      .then((responseJson) => {
-        this.setState({imagesData: responseJson, loading: false});
-      })
-      .catch((error) => {
-        console.error(error);
-      });
+    console.log('call', this.props.dispatch);
+    this.props.dispatch({
+      type: ActionTypes.FETCH_SERVER_IMAGES,
+      payload: '',
+    });
   }
+
+  componentDidUpdate(prevProps, prevState, snapshot): void {
+    console.log('list props', this.props);
+    console.log('prevProps', prevState);
+  }
+
+  handleBase64 = async (path, pictureData) => {
+    console.log(
+      'orientatsjdbsdjhfgs',
+      Object.keys(pictureData).length !== 0
+        ? pictureData.originalRotation
+          ? pictureData.originalRotation
+          : 0
+        : 0,
+    );
+    const resizedImageUrl = await ImageResizer.createResizedImage(
+      path,
+      480,
+      480,
+      'JPEG',
+      80,
+      Object.keys(pictureData).length !== 0
+        ? pictureData.originalRotation
+          ? pictureData.originalRotation
+          : 0
+        : 0,
+      RNFS.DocumentDirectoryPath,
+    );
+    console.log('resizedImageUrl', resizedImageUrl.path);
+    const base64 = await RNFS.readFile(resizedImageUrl.path, 'base64');
+    const source = 'data:image/jpeg;base64,' + base64;
+
+    console.log('source', source);
+    this.setState({
+      avatarSource: source,
+    });
+  };
 
   changeView = () => {
     this.setState({gridView: !this.state.gridView});
@@ -85,12 +96,30 @@ export default class App extends Component<{}> {
                 color="#517fa4"
               />
             </TouchableOpacity>
+
             <Icon
               containerStyle={styles.addIcon}
               size={30}
               name="camera-outline"
               type="ionicon"
               color="#517fa4"
+              onPress={() => {
+                ImagePicker.showImagePicker(
+                  {
+                    title: 'Select Photo',
+                    mediaType: 'photo',
+                  },
+                  (response) => {
+                    console.log('Response = ', response);
+                    if (response.data) {
+                      this.handleBase64(
+                        'data:image/jpeg;base64,' + response.data,
+                        response,
+                      );
+                    }
+                  },
+                );
+              }}
             />
           </View>
         </View>
@@ -157,50 +186,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '50%',
   },
-  gridViewHolder: {
-    margin: 5,
-    height: 160,
-    flex: 1,
-    position: 'relative',
-  },
 
-  gridViewImage: {
-    height: '100%',
-    width: '100%',
-    resizeMode: 'cover',
-  },
-
-  textViewHolder: {
-    position: 'absolute',
-    left: 0,
-    bottom: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.75)',
-    paddingHorizontal: 10,
-    paddingVertical: 13,
-    alignItems: 'center',
-  },
-  textOnImage: {
-    color: 'white',
-  },
-  listViewHolder: {
-    margin: 5,
-    flex: 1,
-    height: 75,
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#C4C4C4',
-  },
-  listViewImage: {
-    flex: 0.2,
-    height: '90%',
-    resizeMode: 'cover',
-  },
-  listViewText: {
-    flex: 0.8,
-    paddingLeft: 10,
-    justifyContent: 'center',
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -213,3 +199,17 @@ const styles = StyleSheet.create({
     color: 'black',
   },
 });
+
+RootScreen.propTypes = {
+  dispatch: PropTypes.func,
+};
+
+const mapStateToProps = (state) => ({
+  app: state.root,
+});
+
+const mapDispatchToProps = (dispatch) => ({
+  dispatch,
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(RootScreen);

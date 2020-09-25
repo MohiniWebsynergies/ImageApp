@@ -1,0 +1,4 @@
+export const ActionTypes = {
+  IMAGES_FETCHED:'IMAGES_FETCHED',
+  FETCH_SERVER_IMAGES: 'FETCH_SERVER_IMAGES',
+};
