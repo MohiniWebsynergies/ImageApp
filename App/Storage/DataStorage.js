@@ -1,46 +1,24 @@
 import AsyncStorage from '@react-native-community/async-storage';
 export class DataStorage {
-
   constructor() {
     this.localImages = [];
     this.serverImages = [];
   }
 
-  async loadFromDisk() {
-    try {
-      let data = await AsyncStorage.getItem('data');
-      //console.log('data is', data, password);
-      if (data !== null) {
-        const localImages = data.localImages;
-        const serverImages = data.serverImages;
-        this.localImages = localImages;
-        this.serverImages = serverImages;
-        return true;
-      }
-      return false;
-    } catch (err) {
-      return false;
-    }
-  }
-
   async saveLocalImagesToDisk(localImages) {
-    let data = {
-      localImages: localImages,
-    };
-    return AsyncStorage.setItem('data', JSON.stringify(data));
+    return AsyncStorage.setItem('localImages', JSON.stringify(localImages));
   }
 
   async saveServerImagesToDisk(serverImages) {
-    let data = {
-      serverImages: serverImages,
-    };
-    return AsyncStorage.setItem('data', JSON.stringify(data));
+    return AsyncStorage.setItem('serverImages', JSON.stringify(serverImages));
   }
-  getLocalImages() {
-    return this.localImages;
+  async getLocalImages() {
+    let localImages = await AsyncStorage.getItem('localImages');
+    return localImages != null ? JSON.parse(localImages) : [];
   }
 
-  getServerImages() {
-    return this.serverImages;
+  async getServerImages() {
+    let serverImages = await AsyncStorage.getItem('serverImages');
+    return serverImages != null ? JSON.parse(serverImages) : [];
   }
 }

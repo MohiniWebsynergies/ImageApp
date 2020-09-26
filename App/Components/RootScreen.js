@@ -12,67 +12,59 @@ import {
 import {Icon} from 'react-native-elements';
 import PropTypes from 'prop-types';
 import ImagePicker from 'react-native-image-picker';
-import RNFS from 'react-native-fs';
-import ImageResizer from 'react-native-image-resizer';
 import ImageComponent from './ImageComponent';
 import {ActionTypes} from '../reducers/constants';
+import AppStorage from '../Util/AppStorage';
 import {connect} from 'react-redux';
 
 class RootScreen extends Component {
   constructor(props) {
     super(props);
-    console.log('props', props);
     this.state = {
-      imagesData: null,
-      localImages: null,
+      imagesData: [],
+      localImages: [],
       loading: true,
       gridView: true,
     };
   }
 
   componentDidMount() {
-    console.log('call', this.props.dispatch);
     this.props.dispatch({
       type: ActionTypes.FETCH_SERVER_IMAGES,
       payload: '',
     });
+    this.setData();
   }
 
   componentDidUpdate(prevProps, prevState, snapshot): void {
-    console.log('list props', this.props);
-    console.log('prevProps', prevState);
+    if (this.props.app.serverFetched !== prevProps.app.serverFetched) {
+      if (this.props.app.serverFetched) {
+        this.setData();
+      }
+    }
+    if (this.props.app.localImageSaved !== prevProps.app.localImageSaved) {
+      if (this.props.app.localImageSaved) {
+        this.setData();
+      }
+    }
   }
 
-  handleBase64 = async (path, pictureData) => {
-    console.log(
-      'orientatsjdbsdjhfgs',
-      Object.keys(pictureData).length !== 0
-        ? pictureData.originalRotation
-          ? pictureData.originalRotation
-          : 0
-        : 0,
+  setData = () => {
+    let localImages = this.props.app.localImages;
+    let serverImages = this.props.app.serverImages;
+    let imagesData = localImages.concat(serverImages);
+    this.setState(
+      {
+        imagesData,
+        loading: false,
+      },
+      () => {
+        this.props.dispatch({
+          type: ActionTypes.IMAGE_SAVE,
+          payload: '',
+        });
+      },
     );
-    const resizedImageUrl = await ImageResizer.createResizedImage(
-      path,
-      480,
-      480,
-      'JPEG',
-      80,
-      Object.keys(pictureData).length !== 0
-        ? pictureData.originalRotation
-          ? pictureData.originalRotation
-          : 0
-        : 0,
-      RNFS.DocumentDirectoryPath,
-    );
-    console.log('resizedImageUrl', resizedImageUrl.path);
-    const base64 = await RNFS.readFile(resizedImageUrl.path, 'base64');
-    const source = 'data:image/jpeg;base64,' + base64;
-
-    console.log('source', source);
-    this.setState({
-      avatarSource: source,
-    });
   };
 
   changeView = () => {
@@ -110,12 +102,19 @@ class RootScreen extends Component {
                     mediaType: 'photo',
                   },
                   (response) => {
-                    console.log('Response = ', response);
                     if (response.data) {
-                      this.handleBase64(
-                        'data:image/jpeg;base64,' + response.data,
-                        response,
-                      );
+                      const local = {
+                        albumId: 1,
+                        id: 1,
+                        title: response.fileName,
+                        url: response.uri,
+                        thumbnailUrl: response.uri,
+                      };
+
+                      this.props.dispatch({
+                        type: ActionTypes.IMAGES_SAVED_COMPLETE,
+                        payload: local,
+                      });
                     }
                   },
                 );

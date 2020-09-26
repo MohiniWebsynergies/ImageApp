@@ -9,7 +9,6 @@ const api = new Frisbee({
 });
 
 async function fetchServerImages() {
-  console.log('called fetchServerImages()');
   let promises = [];
   api.setOptions({
     baseURI: 'https://jsonplaceholder.typicode.com/photos',
@@ -38,15 +37,28 @@ async function fetchServerImages() {
     );
     return {error: 'unable to call api', err};
   }
-  console.log('response response', response.ok);
-  console.log('response', response);
   if (response.ok) {
     serverImages = response.body;
   }
   AppStorage.saveServerImagesToDisk(serverImages);
-  return serverImages;
+  localImages = await AppStorage.getLocalImages();
+  response = {
+    serverImages,
+    localImages,
+  };
+  return response;
+}
+
+async function fetchLocalImages(payload) {
+  let storedImages = await AppStorage.getLocalImages();
+  let localImages = [];
+  localImages.push(payload);
+  let localImagesArray = localImages.concat(storedImages);
+  let status = await AppStorage.saveLocalImagesToDisk(localImagesArray);
+  return localImagesArray;
 }
 
 export const DataService = {
   fetchServerImages: fetchServerImages,
+  fetchLocalImages: fetchLocalImages,
 };
